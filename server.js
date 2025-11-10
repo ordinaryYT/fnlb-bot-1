@@ -11,7 +11,7 @@ require('dotenv').config();
 
 const PORT = process.env.PORT || 3000;
 const API_TOKEN = process.env.API_TOKEN; // Raw API key from .env (no Bearer prefix)
-const ALLOWED_CATEGORIES = process.env.ALLOWED_CATEGORIES ? process.env.ALLOWED_CATEGORIES.split(',') : ['67c2fd571906bd75e5239684']; // Your specified ID
+const ALLOWED_CATEGORIES = process.env.ALLOWED_CATEGORIES ? process.env.ALLOWED_CATEGORIES.split(',') : []; // Empty to show all for testing
 
 // In-memory storage for user categories and bots (replace with a database in production)
 const userCategories = new Map();
@@ -47,7 +47,9 @@ app.get('/api/bots', async (req, res) => {
         'Content-Type': 'application/json'
       }
     });
-    const bots = response.data.filter(bot => bot.nickname.toLowerCase().startsWith('ogsboti'));
+    console.log('Raw bots from API:', response.data); // Log to check data
+    const bots = response.data.filter(bot => bot.nickname.toLowerCase().startsWith('ogsbot')); // Fixed: 'ogsbot' (no extra 'i')
+    console.log('Filtered OGsbot bots:', bots); // Log to verify filter
     res.json({ success: true, bots });
   } catch (error) {
     console.error('Bots API Error Details:', {
@@ -71,7 +73,10 @@ app.get('/api/categories', async (req, res) => {
         'Content-Type': 'application/json'
       }
     });
-    const categories = response.data.filter(category => ALLOWED_CATEGORIES.includes(category.id));
+    console.log('Raw categories from API:', response.data); // Log to check data
+    // Temporarily show all categories for testing (uncomment filter line to restrict)
+    const categories = response.data; // .filter(category => ALLOWED_CATEGORIES.includes(category.id));
+    console.log('Filtered categories:', categories); // Log to verify
     res.json({ success: true, categories });
   } catch (error) {
     console.error('Categories API Error Details:', {
@@ -137,8 +142,8 @@ app.post('/api/register-bot', async (req, res) => {
 
 app.get('/api/category-settings', async (req, res) => {
   const { categoryId } = req.query;
-  if (!categoryId || !ALLOWED_CATEGORIES.includes(categoryId)) {
-    return res.status(400).json({ error: 'Invalid or unauthorized categoryId.' });
+  if (!categoryId) {
+    return res.status(400).json({ error: 'categoryId query parameter is required.' });
   }
 
   if (!API_TOKEN) {
