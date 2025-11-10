@@ -35,6 +35,36 @@ async function fetchWithRetry(url, options, retries = 3) {
   throw new Error('Rate limit exceeded after multiple retries.');
 }
 
+// New endpoint: Get public bots (filter by prefix for category 67c2fd571906bd75e5239684)
+app.get('/api/public-bots', async (req, res) => {
+  if (!API_TOKEN) {
+    return res.status(500).json({ error: 'Server config error: API_TOKEN not set.' });
+  }
+
+  try {
+    const response = await fetchWithRetry('https://api.fnlb.net/bots', {
+      headers: {
+        'Authorization': API_TOKEN,  // Plain key, as per docs
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const allBots = response.data;
+    // Filter bots starting with "OGsbot" (for public category 67c2fd571906bd75e5239684)
+    const publicBots = allBots.filter(bot => bot.nickname.toLowerCase().startsWith('ogsboti'));
+    res.json({ success: true, bots: publicBots });
+  } catch (error) {
+    console.error('Public Bots API Error Details:', {
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message
+    });
+    res.status(error.response?.status || 500).json({ 
+      error: 'Failed to fetch public bots. Check console for details.' 
+    });
+  }
+});
+
 app.get('/api/categories', async (req, res) => {
   if (!API_TOKEN) {
     return res.status(500).json({ error: 'Server config error: API_TOKEN not set.' });
@@ -43,7 +73,7 @@ app.get('/api/categories', async (req, res) => {
   try {
     const response = await fetchWithRetry('https://api.fnlb.net/categories', {
       headers: {
-        'Authorization': API_TOKEN,  // Plain key, as per docs
+        'Authorization': API_TOKEN,
         'Content-Type': 'application/json'
       }
     });
@@ -51,10 +81,9 @@ app.get('/api/categories', async (req, res) => {
     const categories = response.data.filter(category => ALLOWED_CATEGORIES.includes(category.id));
     res.json({ success: true, categories });
   } catch (error) {
-    console.error('API Error Details:', {
+    console.error('Categories API Error Details:', {
       status: error.response?.status,
       data: error.response?.data,
-      headers: error.response?.headers,
       message: error.message
     });
     res.status(error.response?.status || 500).json({ 
@@ -77,7 +106,7 @@ app.post('/api/register-bot', async (req, res) => {
   try {
     const botsResponse = await fetchWithRetry('https://api.fnlb.net/bots', {
       headers: {
-        'Authorization': API_TOKEN,  // Plain key, as per docs
+        'Authorization': API_TOKEN,
         'Content-Type': 'application/json'
       }
     });
@@ -103,14 +132,13 @@ app.post('/api/register-bot', async (req, res) => {
       res.status(404).json({ error: 'Bot not found with the given nickname.' });
     }
   } catch (error) {
-    console.error('API Error Details:', {
+    console.error('Register Bot API Error Details:', {
       status: error.response?.status,
       data: error.response?.data,
-      headers: error.response?.headers,
       message: error.message
     });
     res.status(error.response?.status || 500).json({ 
-      error: 'Failed to register bot. Check console for details. Common fix: Verify API key format.' 
+      error: 'Failed to register bot. Check console for details.' 
     });
   }
 });
@@ -128,7 +156,7 @@ app.get('/api/category-settings', async (req, res) => {
   try {
     const response = await fetchWithRetry('https://api.fnlb.net/categories', {
       headers: {
-        'Authorization': API_TOKEN,  // Plain key, as per docs
+        'Authorization': API_TOKEN,
         'Content-Type': 'application/json'
       }
     });
@@ -140,10 +168,9 @@ app.get('/api/category-settings', async (req, res) => {
       res.status(404).json({ error: 'Category not found.' });
     }
   } catch (error) {
-    console.error('API Error Details:', {
+    console.error('Category Settings API Error Details:', {
       status: error.response?.status,
       data: error.response?.data,
-      headers: error.response?.headers,
       message: error.message
     });
     res.status(error.response?.status || 500).json({ 
