@@ -5,42 +5,140 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bot Creator</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }
-        .warning { color: red; font-weight: bold; padding: 10px; border: 1px solid red; }
-        .form-container { max-width: 600px; padding: 20px; background-color: white; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        body { font-family: Arial, sans-serif; margin: 0; background-color: #f5f5f5; color: #333; }
+        .header { background-color: #1DA1F2; color: white; padding: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .nav { display: flex; gap: 20px; }
+        .warning { color: red; font-weight: bold; padding: 10px; border: 1px solid red; margin: 10px; background: white; }
+        .form-container { max-width: 400px; padding: 20px; background: white; margin: 10px; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
         label { display: block; margin-bottom: 5px; font-weight: bold; }
         input { width: 100%; padding: 8px; margin-bottom: 15px; box-sizing: border-box; }
         button { background-color: #1DA1F2; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin-right: 10px; }
         button:hover { background-color: #1a8cd8; }
-        .category { background-color: #1DA1F2; color: white; padding: 10px; margin: 10px 0; border-radius: 5px; position: relative; }
-        .category img { width: 50px; height: 50px; vertical-align: middle; margin-right: 10px; }
-        .settings { display: none; background-color: white; color: black; padding: 10px; border: 1px solid #ccc; margin-top: 10px; }
-        .settings-btn { background-color: #ff9800; }
-        .add-bot-btn { background-color: #4caf50; }
-        #botDisplay p { margin: 0; }
+        .section { margin: 20px; }
+        .section h2 { color: #1DA1F2; }
+        .public-bots-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+        .bot-card { background: white; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.1); padding: 10px; text-align: center; }
+        .bot-avatar { width: 80px; height: 80px; border-radius: 50%; background: #1DA1F2; margin: 0 auto 10px; }
+        .status { color: #4caf50; font-weight: bold; } /* Green for online/booting */
+        .status.offline { color: #f44336; }
+        .bot-control-header { background: #1DA1F2; color: white; padding: 10px; display: flex; justify-content: space-between; align-items: center; border-radius: 5px 5px 0 0; }
+        .control-buttons { display: flex; gap: 10px; }
+        .control-btn { padding: 5px 10px; border: none; border-radius: 3px; cursor: pointer; }
+        .stop-btn { background: #f44336; color: white; }
+        .start-btn { background: #4caf50; color: white; }
+        .view-logs-btn { background: #9e9e9e; color: white; }
+        .category-card { background: white; margin: 10px 0; border-radius: 0 0 5px 5px; padding: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .category-name { font-weight: bold; }
+        .category-actions { display: flex; gap: 10px; }
+        .settings-btn { background: #ff9800; color: white; padding: 5px 10px; border: none; border-radius: 3px; cursor: pointer; }
+        .add-bot-btn { background: #4caf50; color: white; padding: 5px 10px; border: none; border-radius: 3px; cursor: pointer; }
+        .modal { display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
+        .modal-content { background: white; margin: 15% auto; padding: 20px; border-radius: 5px; width: 80%; max-width: 400px; }
+        .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .settings { display: none; background: white; color: black; padding: 10px; border: 1px solid #ccc; margin-top: 10px; border-radius: 5px; }
+        #botDisplay { margin: 10px; padding: 10px; background: #e3f2fd; border-radius: 5px; }
     </style>
 </head>
 <body>
-    <div class="form-container">
+    <div class="header">
+        <div class="nav">
+            <span>Home</span>
+            <span>Bots & Account</span>
+        </div>
         <h1>Bot Creator</h1>
-        <p class="warning">
-            Please do not add this to your main account as this may cause major issues with your main account. 
-            Please login to an alt account on Epic Games before proceeding with this step.
-        </p>
-        <form id="botForm">
-            <label for="authCode">Authorization Code (for future AHK script):</label><br>
-            <input type="text" id="authCode" name="authCode" required><br><br>
-            <label for="altAccount">Alt Account Name:</label><br>
-            <input type="text" id="altAccount" name="altAccount" required><br><br>
-            <label for="botName">Bot Nickname (from fnlb):</label><br>
-            <input type="text" id="botName" name="botName" required><br><br>
-            <button type="submit">Submit</button>
-        </form>
-        <div id="categoryList"></div>
-        <div id="botDisplay"></div>
     </div>
 
+    <div class="warning">
+        Please do not add this to your main account as this may cause major issues with your main account. Please login to an alt account on Epic Games before proceeding with this step.
+    </div>
+
+    <div class="form-container">
+        <form id="globalForm">
+            <label for="globalAuthCode">Authorization Code (for future AHK script):</label>
+            <input type="text" id="globalAuthCode" name="globalAuthCode" placeholder="Enter code...">
+            <label for="globalAltAccount">Alt Account Name:</label>
+            <input type="text" id="globalAltAccount" name="globalAltAccount" placeholder="Enter alt name...">
+            <label for="globalBotName">Bot Nickname (from fnlb):</label>
+            <input type="text" id="globalBotName" name="globalBotName" placeholder="Enter bot name...">
+            <button type="submit">Submit Global</button>
+        </form>
+    </div>
+
+    <!-- Public Bots Section (2nd Image) -->
+    <div class="section">
+        <h2>3 Available Bots</h2>
+        <div id="publicBotsGrid" class="public-bots-grid"></div>
+    </div>
+
+    <!-- Bot Control Section (3rd Image) -->
+    <div class="section">
+        <div class="bot-control-header">
+            <h3>Home > My Bots</h3>
+            <div class="control-buttons">
+                <button class="view-logs-btn control-btn" onclick="viewLogs()">View logs</button>
+                <button class="stop-btn control-btn" onclick="stopBots()">Stop</button>
+                <button class="start-btn control-btn" onclick="startBots()">Start bots</button>
+            </div>
+        </div>
+        <div style="background: #1DA1F2; color: white; padding: 10px; display: flex; justify-content: space-between;">
+            <span>Showing 17 categories with 8 bots</span>
+            <div>
+                <button onclick="sortBots()">Sort by: Available First</button>
+                <input type="text" placeholder="Search for a bot...">
+            </div>
+        </div>
+        <div id="categoryList"></div>
+    </div>
+
+    <!-- Add Bot Modal -->
+    <div id="addBotModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h3>Add Bot to Category</h3>
+            <form id="addBotForm">
+                <input type="hidden" id="selectedCategoryId" name="categoryId">
+                <label for="authCode">Authorization Code (for future AHK script):</label>
+                <input type="text" id="authCode" name="authCode" required>
+                <label for="altAccount">Alt Account Name:</label>
+                <input type="text" id="altAccount" name="altAccount" required>
+                <label for="botName">Bot Nickname (from fnlb):</label>
+                <input type="text" id="botName" name="botName" required>
+                <button type="submit">Add Bot</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="botDisplay"></div>
+
     <script>
+        let currentCategoryId = '';
+
+        // Load public bots on page load
+        async function loadPublicBots() {
+            const response = await fetch('/api/public-bots');
+            const data = await response.json();
+            const grid = document.getElementById('publicBotsGrid');
+            grid.innerHTML = '';
+
+            if (data.success) {
+                data.bots.forEach(bot => {
+                    const card = document.createElement('div');
+                    card.className = 'bot-card';
+                    const status = bot.status || 'BOOTING'; // Placeholder status
+                    card.innerHTML = `
+                        <div class="bot-avatar" style="background-image: url('https://via.placeholder.com/80?text=${bot.nickname.charAt(0)}')"></div>
+                        <h4>${bot.nickname}</h4>
+                        <p class="status ${status.toLowerCase() === 'offline' ? 'offline' : ''}">${status}</p>
+                        <p>96 FRIENDS</p>
+                    `;
+                    grid.appendChild(card);
+                });
+            } else {
+                grid.innerHTML = `<p>Error: ${data.error}</p>`;
+            }
+        }
+
+        // Load categories
         async function loadCategories() {
             const response = await fetch('/api/categories');
             const data = await response.json();
@@ -50,21 +148,30 @@
             if (data.success) {
                 data.categories.forEach(category => {
                     const div = document.createElement('div');
-                    div.className = 'category';
+                    div.className = 'category-card';
                     div.innerHTML = `
-                        <img src="https://via.placeholder.com/50" alt="Category Icon">
-                        ${category.name} (ID: ${category.id})
-                        <button class="settings-btn" onclick="showSettings('${category.id}')">Settings</button>
-                        <button class="add-bot-btn" onclick="addBot('${category.id}')">Add Bot</button>
+                        <span class="category-name">${category.name} (1 of 1 bots)</span>
+                        <div class="category-actions">
+                            <button class="settings-btn" onclick="showSettings('${category.id}')">⚙️</button>
+                            <button class="add-bot-btn" onclick="openAddBotModal('${category.id}')">+</button>
+                        </div>
                         <div id="settings-${category.id}" class="settings"></div>
                     `;
                     categoryList.appendChild(div);
                 });
+            } else {
+                categoryList.innerHTML = `<p>Error loading categories: ${data.error}</p>`;
             }
         }
 
+        // Settings button
         async function showSettings(categoryId) {
             const settingsDiv = document.getElementById(`settings-${categoryId}`);
+            if (settingsDiv.style.display === 'block') {
+                settingsDiv.style.display = 'none';
+                return;
+            }
+
             const response = await fetch(`/api/category-settings?categoryId=${categoryId}`);
             const data = await response.json();
 
@@ -80,50 +187,79 @@
                     <p><strong>Platform:</strong> ${category.config.platform.join(', ')}</p>
                     <p><strong>Invite Timeout:</strong> ${category.config.inviteTimeout}</p>
                     <p><strong>Level:</strong> ${category.config.level.join(', ')}</p>
-                    <p><strong>Start Outfits:</strong> ${category.config.startOutfit.map(o => `${o.id} (Variants: ${o.variants.join(', ')})`).join('<br>')}</p>
+                    <p><strong>Start Outfits:</strong> ${category.config.startOutfit.map(o => o.id).join(', ')}</p>
                     <p><strong>Prefixes:</strong> ${category.config.prefixes.join(', ')}</p>
                 `;
-                settingsDiv.style.display = settingsDiv.style.display === 'block' ? 'none' : 'block';
+                settingsDiv.style.display = 'block';
+            } else {
+                settingsDiv.innerHTML = `<p>Error: ${data.error}</p>`;
+                settingsDiv.style.display = 'block';
             }
         }
 
-        async function addBot(categoryId) {
-            const authCode = document.getElementById('authCode').value;
-            const altAccount = document.getElementById('altAccount').value;
-            const botName = document.getElementById('botName').value;
-
-            if (authCode && altAccount && botName && categoryId) {
-                const response = await fetch('/api/register-bot', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ authCode, altAccount, botName, categoryId })
-                });
-
-                const data = await response.json();
-                const display = document.getElementById('botDisplay');
-                display.innerHTML = '';
-
-                if (data.success) {
-                    display.innerHTML = `
-                        <h3>${data.bot.altAccount}'s bot added to ${categoryId}</h3>
-                        <div class="bot-display">
-                            <img src="https://via.placeholder.com/50" alt="Bot Avatar">
-                            ${data.bot.nickname}<br>
-                            ${data.bot.email}<br>
-                            Category ID: ${data.bot.categoryId}<br>
-                            1 FRIENDS
-                        </div>
-                    `;
-                    // Simulate AHK script call (future implementation)
-                    console.log(`Simulating AHK script with: authCode=${authCode}, altAccount=${altAccount}, botName=${botName}, categoryId=${categoryId}`);
-                } else {
-                    display.innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
-                }
-            }
+        // Open Add Bot Modal
+        function openAddBotModal(categoryId) {
+            currentCategoryId = categoryId;
+            document.getElementById('selectedCategoryId').value = categoryId;
+            document.getElementById('addBotModal').style.display = 'block';
         }
 
-        // Load categories on page load
-        window.onload = loadCategories;
+        // Close Modal
+        function closeModal() {
+            document.getElementById('addBotModal').style.display = 'none';
+        }
+
+        // Add Bot Form Submit
+        document.getElementById('addBotForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = {
+                authCode: document.getElementById('authCode').value,
+                altAccount: document.getElementById('altAccount').value,
+                botName: document.getElementById('botName').value,
+                categoryId: currentCategoryId
+            };
+
+            const response = await fetch('/api/register-bot', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+
+            const data = await response.json();
+            const display = document.getElementById('botDisplay');
+            if (data.success) {
+                display.innerHTML = `
+                    <h3>Bot "${data.bot.nickname}" added to category ${data.bot.categoryId}</h3>
+                    <p>Alt Account: ${data.bot.altAccount}</p>
+                    <p>Simulating AHK: authCode=${formData.authCode}, botName=${formData.botName}, categoryId=${formData.categoryId}</p>
+                `;
+                closeModal();
+            } else {
+                display.innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
+            }
+        });
+
+        // Placeholder functions (do nothing for now)
+        function viewLogs() { console.log('View logs clicked'); }
+        function stopBots() { console.log('Stop bots clicked'); }
+        function startBots() { console.log('Start bots clicked'); }
+        function sortBots() { console.log('Sort clicked'); }
+
+        // Global form submit (placeholder)
+        document.getElementById('globalForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            console.log('Global submit:', {
+                authCode: document.getElementById('globalAuthCode').value,
+                altAccount: document.getElementById('globalAltAccount').value,
+                botName: document.getElementById('globalBotName').value
+            });
+        });
+
+        // Load on page load
+        window.onload = () => {
+            loadPublicBots();
+            loadCategories();
+        };
     </script>
 </body>
 </html>
