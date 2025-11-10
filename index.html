@@ -7,13 +7,16 @@
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }
         .warning { color: red; font-weight: bold; padding: 10px; border: 1px solid red; }
-        .form-container { max-width: 400px; padding: 20px; background-color: white; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .form-container { max-width: 600px; padding: 20px; background-color: white; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
         label { display: block; margin-bottom: 5px; font-weight: bold; }
         input { width: 100%; padding: 8px; margin-bottom: 15px; box-sizing: border-box; }
-        button { background-color: #1DA1F2; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
+        button { background-color: #1DA1F2; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin-right: 10px; }
         button:hover { background-color: #1a8cd8; }
-        .bot-display { background-color: #1DA1F2; color: white; padding: 10px; margin-top: 20px; border-radius: 5px; }
-        .bot-display img { width: 50px; height: 50px; vertical-align: middle; margin-right: 10px; }
+        .category { background-color: #1DA1F2; color: white; padding: 10px; margin: 10px 0; border-radius: 5px; position: relative; }
+        .category img { width: 50px; height: 50px; vertical-align: middle; margin-right: 10px; }
+        .settings { display: none; background-color: white; color: black; padding: 10px; border: 1px solid #ccc; margin-top: 10px; }
+        .settings-btn { background-color: #ff9800; }
+        .add-bot-btn { background-color: #4caf50; }
         #botDisplay p { margin: 0; }
     </style>
 </head>
@@ -33,23 +36,67 @@
             <input type="text" id="botName" name="botName" required><br><br>
             <button type="submit">Submit</button>
         </form>
+        <div id="categoryList"></div>
         <div id="botDisplay"></div>
     </div>
 
     <script>
-        document.getElementById('botForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = {
-                authCode: document.getElementById('authCode').value,
-                altAccount: document.getElementById('altAccount').value,
-                botName: document.getElementById('botName').value
-            };
+        async function loadCategories() {
+            const response = await fetch('/api/categories');
+            const data = await response.json();
+            const categoryList = document.getElementById('categoryList');
+            categoryList.innerHTML = '';
 
-            try {
+            if (data.success) {
+                data.categories.forEach(category => {
+                    const div = document.createElement('div');
+                    div.className = 'category';
+                    div.innerHTML = `
+                        <img src="https://via.placeholder.com/50" alt="Category Icon">
+                        ${category.name} (ID: ${category.id})
+                        <button class="settings-btn" onclick="showSettings('${category.id}')">Settings</button>
+                        <button class="add-bot-btn" onclick="addBot('${category.id}')">Add Bot</button>
+                        <div id="settings-${category.id}" class="settings"></div>
+                    `;
+                    categoryList.appendChild(div);
+                });
+            }
+        }
+
+        async function showSettings(categoryId) {
+            const settingsDiv = document.getElementById(`settings-${categoryId}`);
+            const response = await fetch(`/api/category-settings?categoryId=${categoryId}`);
+            const data = await response.json();
+
+            if (data.success) {
+                const category = data.category;
+                settingsDiv.innerHTML = `
+                    <h4>Settings for ${category.name}</h4>
+                    <p><strong>ID:</strong> ${category.id}</p>
+                    <p><strong>Admins:</strong> ${category.config.admins.map(a => a.name).join(', ')}</p>
+                    <p><strong>Privacy:</strong> ${category.config.privacy}</p>
+                    <p><strong>Accept Invites:</strong> ${category.config.acceptInvites}</p>
+                    <p><strong>Disable Playlist Checks:</strong> ${category.config.disablePlaylistChecks}</p>
+                    <p><strong>Platform:</strong> ${category.config.platform.join(', ')}</p>
+                    <p><strong>Invite Timeout:</strong> ${category.config.inviteTimeout}</p>
+                    <p><strong>Level:</strong> ${category.config.level.join(', ')}</p>
+                    <p><strong>Start Outfits:</strong> ${category.config.startOutfit.map(o => `${o.id} (Variants: ${o.variants.join(', ')})`).join('<br>')}</p>
+                    <p><strong>Prefixes:</strong> ${category.config.prefixes.join(', ')}</p>
+                `;
+                settingsDiv.style.display = settingsDiv.style.display === 'block' ? 'none' : 'block';
+            }
+        }
+
+        async function addBot(categoryId) {
+            const authCode = document.getElementById('authCode').value;
+            const altAccount = document.getElementById('altAccount').value;
+            const botName = document.getElementById('botName').value;
+
+            if (authCode && altAccount && botName && categoryId) {
                 const response = await fetch('/api/register-bot', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(formData)
+                    body: JSON.stringify({ authCode, altAccount, botName, categoryId })
                 });
 
                 const data = await response.json();
@@ -58,22 +105,25 @@
 
                 if (data.success) {
                     display.innerHTML = `
-                        <h3>${data.bot.altAccount}'s bot (1 of 1 bots)</h3>
+                        <h3>${data.bot.altAccount}'s bot added to ${categoryId}</h3>
                         <div class="bot-display">
                             <img src="https://via.placeholder.com/50" alt="Bot Avatar">
                             ${data.bot.nickname}<br>
                             ${data.bot.email}<br>
-                            Category: ${data.bot.category}<br>
+                            Category ID: ${data.bot.categoryId}<br>
                             1 FRIENDS
                         </div>
                     `;
+                    // Simulate AHK script call (future implementation)
+                    console.log(`Simulating AHK script with: authCode=${authCode}, altAccount=${altAccount}, botName=${botName}, categoryId=${categoryId}`);
                 } else {
                     display.innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
                 }
-            } catch (error) {
-                document.getElementById('botDisplay').innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
             }
-        });
+        }
+
+        // Load categories on page load
+        window.onload = loadCategories;
     </script>
 </body>
 </html>
