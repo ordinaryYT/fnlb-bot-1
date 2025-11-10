@@ -11,7 +11,7 @@ require('dotenv').config();
 
 const PORT = process.env.PORT || 3000;
 const API_TOKEN = process.env.API_TOKEN; // Raw API key from .env (no Bearer prefix)
-const ALLOWED_CATEGORIES = process.env.ALLOWED_CATEGORIES ? process.env.ALLOWED_CATEGORIES.split(',') : []; // Comma-separated category IDs
+const ALLOWED_CATEGORIES = process.env.ALLOWED_CATEGORIES ? process.env.ALLOWED_CATEGORIES.split(',') : ['67c2fd571906bd75e5239684']; // Your specified ID
 
 // In-memory storage for user categories and bots (replace with a database in production)
 const userCategories = new Map();
@@ -35,8 +35,7 @@ async function fetchWithRetry(url, options, retries = 3) {
   throw new Error('Rate limit exceeded after multiple retries.');
 }
 
-// New endpoint: Get public bots (filter by prefix for category 67c2fd571906bd75e5239684)
-app.get('/api/public-bots', async (req, res) => {
+app.get('/api/bots', async (req, res) => {
   if (!API_TOKEN) {
     return res.status(500).json({ error: 'Server config error: API_TOKEN not set.' });
   }
@@ -44,24 +43,19 @@ app.get('/api/public-bots', async (req, res) => {
   try {
     const response = await fetchWithRetry('https://api.fnlb.net/bots', {
       headers: {
-        'Authorization': API_TOKEN,  // Plain key, as per docs
+        'Authorization': API_TOKEN,
         'Content-Type': 'application/json'
       }
     });
-
-    const allBots = response.data;
-    // Filter bots starting with "OGsbot" (for public category 67c2fd571906bd75e5239684)
-    const publicBots = allBots.filter(bot => bot.nickname.toLowerCase().startsWith('ogsboti'));
-    res.json({ success: true, bots: publicBots });
+    const bots = response.data.filter(bot => bot.nickname.toLowerCase().startsWith('ogsboti'));
+    res.json({ success: true, bots });
   } catch (error) {
-    console.error('Public Bots API Error Details:', {
+    console.error('Bots API Error Details:', {
       status: error.response?.status,
       data: error.response?.data,
       message: error.message
     });
-    res.status(error.response?.status || 500).json({ 
-      error: 'Failed to fetch public bots. Check console for details.' 
-    });
+    res.status(error.response?.status || 500).json({ error: 'Failed to fetch bots. Check console for details.' });
   }
 });
 
@@ -77,7 +71,6 @@ app.get('/api/categories', async (req, res) => {
         'Content-Type': 'application/json'
       }
     });
-
     const categories = response.data.filter(category => ALLOWED_CATEGORIES.includes(category.id));
     res.json({ success: true, categories });
   } catch (error) {
@@ -87,15 +80,15 @@ app.get('/api/categories', async (req, res) => {
       message: error.message
     });
     res.status(error.response?.status || 500).json({ 
-      error: 'Failed to fetch categories. Check console for details. Common fix: Verify API key format.' 
+      error: 'Failed to fetch categories. Check console for details.' 
     });
   }
 });
 
 app.post('/api/register-bot', async (req, res) => {
-  const { authCode, altAccount, botName, categoryId } = req.body;
+  const { epicId, altAccount, botName, categoryId } = req.body;
 
-  if (!authCode || !altAccount || !botName || !categoryId) {
+  if (!epicId || !altAccount || !botName || !categoryId) {
     return res.status(400).json({ error: 'All fields are required.' });
   }
 
@@ -125,7 +118,8 @@ app.post('/api/register-bot', async (req, res) => {
           nickname: bot.nickname,
           email: bot.email,
           altAccount,
-          categoryId
+          categoryId,
+          epicId
         }
       });
     } else {
@@ -137,16 +131,14 @@ app.post('/api/register-bot', async (req, res) => {
       data: error.response?.data,
       message: error.message
     });
-    res.status(error.response?.status || 500).json({ 
-      error: 'Failed to register bot. Check console for details.' 
-    });
+    res.status(error.response?.status || 500).json({ error: 'Failed to register bot. Check console for details.' });
   }
 });
 
 app.get('/api/category-settings', async (req, res) => {
   const { categoryId } = req.query;
-  if (!categoryId) {
-    return res.status(400).json({ error: 'categoryId query parameter is required.' });
+  if (!categoryId || !ALLOWED_CATEGORIES.includes(categoryId)) {
+    return res.status(400).json({ error: 'Invalid or unauthorized categoryId.' });
   }
 
   if (!API_TOKEN) {
@@ -173,9 +165,7 @@ app.get('/api/category-settings', async (req, res) => {
       data: error.response?.data,
       message: error.message
     });
-    res.status(error.response?.status || 500).json({ 
-      error: 'Failed to fetch category settings. Check console for details.' 
-    });
+    res.status(error.response?.status || 500).json({ error: 'Failed to fetch category settings. Check console for details.' });
   }
 });
 
