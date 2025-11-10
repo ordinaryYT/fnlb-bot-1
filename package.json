@@ -1,7 +1,7 @@
 {
   "name": "bot-creator",
   "version": "1.0.0",
-  "description": "A production-ready bot creation service with user-specific categories",
+  "description": "A production-ready bot creation service with fnlb categories",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
