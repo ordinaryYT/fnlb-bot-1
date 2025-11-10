@@ -83,7 +83,7 @@
             <span class="close" onclick="closeModal()">&times;</span>
             <h3>Add Bot</h3>
             <form id="addBotForm">
-                <input type="hidden" id="selectedCategoryId" name="categoryId" value="67c2fd571906bd75e5239684">
+                <input type="hidden" id="selectedCategoryId" name="categoryId" value="7a85cbd3e019417e8b6fcd4e"> <!-- Default to your JSON ID -->
                 <p>Choose an option:</p>
                 <button type="button" onclick="createEpicAccount()">Create Epic Games Account</button>
                 <button type="button" onclick="redirectToEpic()">I Already Have an Epic Games Account</button>
@@ -162,7 +162,7 @@
         }
 
         function redirectToEpic() {
-            window.location.href = 'https://www.epicgames.com/id/api/redirect?clientId=3f69e56c7649492c8cc29f1af08a8a12&responseType=code';
+            window.location.href = 'https://www.epicgames.com/id/api/redirect?clientId=3c69e56c7649492c8cc29f1af08a8a12&responseType=code'; // Corrected clientId from your input
         }
 
         // Handle modal and form after redirect
@@ -228,7 +228,7 @@
             const response = await fetch(`/api/category-settings?categoryId=${categoryId}`);
             const data = await response.json();
 
-            if (data.success && categoryId === '67c2fd571906bd75e5239684') {
+            if (data.success && categoryId === '7a85cbd3e019417e8b6fcd4e') { // Match your JSON ID
                 const category = data.category;
                 settingsDiv.innerHTML = `
                     <h4>Settings for ${category.name}</h4>
@@ -245,7 +245,7 @@
                 `;
                 settingsDiv.style.display = 'block';
             } else {
-                settingsDiv.innerHTML = `<p>Error: Settings only available for category ID 67c2fd571906bd75e5239684</p>`;
+                settingsDiv.innerHTML = `<p>Error: Settings only available for category ID 7a85cbd3e019417e8b6fcd4e</p>`;
                 settingsDiv.style.display = 'block';
             }
         }
