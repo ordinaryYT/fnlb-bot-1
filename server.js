@@ -1,46 +1,64 @@
 const express = require('express');
 const axios = require('axios');
 const path = require('path');
+const fs = require('fs');
 const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
 
 // Load environment variables
 require('dotenv').config();
 
 const PORT = process.env.PORT || 3000;
 const API_TOKEN = process.env.API_TOKEN; // API token from .env
+const ALLOWED_CATEGORIES = process.env.ALLOWED_CATEGORIES ? process.env.ALLOWED_CATEGORIES.split(',') : []; // Comma-separated category IDs
 
-// In-memory storage for user categories (replace with a database in production)
+// In-memory storage for user categories and bots (replace with a database in production)
 const userCategories = new Map();
+const userBots = new Map();
 
-app.post('/api/register-bot', async (req, res) => {
-    const { authCode, altAccount, botName } = req.body;
-
-    if (!authCode || !altAccount || !botName) {
-        return res.status(400).json({ error: 'All fields are required.' });
-    }
-
+app.get('/api/categories', async (req, res) => {
     try {
-        // Simulate token exchange (replace with actual Epic Games token exchange)
         const apiKey = `Bearer ${API_TOKEN}`; // Placeholder; replace with token exchange logic
-
-        const response = await axios.get('https://api.fnlb.net/bots', {
+        const response = await axios.get('https://api.fnlb.net/categories', {
             headers: {
                 'Authorization': apiKey,
                 'Content-Type': 'application/json'
             }
         });
 
-        const bots = response.data;
+        const categories = response.data.filter(category => ALLOWED_CATEGORIES.includes(category.id));
+        res.json({ success: true, categories });
+    } catch (error) {
+        console.error('API Error:', error.message);
+        res.status(500).json({ error: 'Failed to fetch categories.' });
+    }
+});
+
+app.post('/api/register-bot', async (req, res) => {
+    const { authCode, altAccount, botName, categoryId } = req.body;
+
+    if (!authCode || !altAccount || !botName || !categoryId) {
+        return res.status(400).json({ error: 'All fields are required.' });
+    }
+
+    try {
+        const apiKey = `Bearer ${API_TOKEN}`; // Placeholder; replace with token exchange logic
+        const botsResponse = await axios.get('https://api.fnlb.net/bots', {
+            headers: {
+                'Authorization': apiKey,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const bots = botsResponse.data;
         const bot = bots.find(b => b.nickname === botName);
 
         if (bot) {
-            // Generate a unique category name for the user (e.g., altAccount + timestamp)
-            const categoryName = `${altAccount}_Cat_${Date.now()}`;
-            userCategories.set(altAccount, categoryName);
+            // Simulate adding bot to category (future AHK integration)
+            if (!userBots.has(altAccount)) userBots.set(altAccount, new Map());
+            userBots.get(altAccount).set(botName, { categoryId, ...bot });
 
             res.json({
                 success: true,
@@ -48,7 +66,7 @@ app.post('/api/register-bot', async (req, res) => {
                     nickname: bot.nickname,
                     email: bot.email,
                     altAccount,
-                    category: categoryName
+                    categoryId
                 }
             });
         } else {
@@ -56,12 +74,35 @@ app.post('/api/register-bot', async (req, res) => {
         }
     } catch (error) {
         console.error('API Error:', error.message);
-        res.status(500).json({ error: 'Failed to fetch bots. Please try again later.' });
+        res.status(500).json({ error: 'Failed to register bot.' });
+    }
+});
+
+app.get('/api/category-settings', async (req, res) => {
+    const { categoryId } = req.query;
+    try {
+        const apiKey = `Bearer ${API_TOKEN}`; // Placeholder; replace with token exchange logic
+        const response = await axios.get('https://api.fnlb.net/categories', {
+            headers: {
+                'Authorization': apiKey,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const category = response.data.find(c => c.id === categoryId);
+        if (category) {
+            res.json({ success: true, category });
+        } else {
+            res.status(404).json({ error: 'Category not found.' });
+        }
+    } catch (error) {
+        console.error('API Error:', error.message);
+        res.status(500).json({ error: 'Failed to fetch category settings.' });
     }
 });
 
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // Error handling middleware
