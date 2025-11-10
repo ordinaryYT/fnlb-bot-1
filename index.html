@@ -10,11 +10,6 @@
         .header { background-color: #1DA1F2; color: white; padding: 10px; display: flex; justify-content: space-between; align-items: center; }
         .nav { display: flex; gap: 20px; }
         .warning { color: red; font-weight: bold; padding: 10px; border: 1px solid red; margin: 10px; background: white; }
-        .form-container { max-width: 400px; padding: 20px; background: white; margin: 10px; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input { width: 100%; padding: 8px; margin-bottom: 15px; box-sizing: border-box; }
-        button { background-color: #1DA1F2; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
-        button:hover { background-color: #1a8cd8; }
         .section { margin: 20px; }
         .section h2 { color: #1DA1F2; }
         .public-bots-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
@@ -36,7 +31,6 @@
         .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
         .settings { display: none; background: white; color: black; padding: 10px; border: 1px solid #ccc; margin-top: 10px; border-radius: 5px; }
         #botDisplay { margin: 10px; padding: 10px; background: #e3f2fd; border-radius: 5px; }
-        .hidden { display: none; }
     </style>
     <noscript>
         <div class="no-js">
@@ -55,23 +49,6 @@
 
     <div class="warning">
         Please do not add this to your main account as this may cause major issues with your main account. Please login to an alt account on Epic Games before proceeding with this step.
-    </div>
-
-    <div class="form-container" id="initialForm">
-        <h3>Login or Create Account</h3>
-        <button onclick="createEpicAccount()">Create Epic Games Account</button>
-        <button onclick="redirectToEpic()">I Already Have an Epic Games Account</button>
-    </div>
-
-    <div class="form-container hidden" id="postRedirectForm">
-        <h3>Enter Epic Games Details</h3>
-        <form id="epicForm">
-            <label for="epicId">Epic Games ID (from redirect):</label>
-            <input type="text" id="epicId" name="epicId" placeholder="Enter ID..." required>
-            <label for="botName">Bot Nickname:</label>
-            <input type="text" id="botName" name="botName" placeholder="Enter bot name..." required>
-            <button type="submit">Add Bot</button>
-        </form>
     </div>
 
     <div class="section">
@@ -100,6 +77,27 @@
 
     <div id="botDisplay"></div>
 
+    <!-- Add Bot Modal -->
+    <div id="addBotModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h3>Add Bot</h3>
+            <form id="addBotForm">
+                <input type="hidden" id="selectedCategoryId" name="categoryId" value="67c2fd571906bd75e5239684">
+                <p>Choose an option:</p>
+                <button type="button" onclick="createEpicAccount()">Create Epic Games Account</button>
+                <button type="button" onclick="redirectToEpic()">I Already Have an Epic Games Account</button>
+                <div id="epicIdField" style="display: none;">
+                    <label for="epicId">Epic Games ID (from redirect):</label>
+                    <input type="text" id="epicId" name="epicId" placeholder="Enter ID..." required>
+                </div>
+                <label for="botName">Bot Nickname:</label>
+                <input type="text" id="botName" name="botName" placeholder="Enter bot name..." required>
+                <button type="submit" id="submitBtn" style="display: none;">Add Bot</button>
+            </form>
+        </div>
+    </div>
+
     <script>
         // Check JavaScript
         document.querySelector('.no-js').style.display = 'none';
@@ -112,17 +110,21 @@
             grid.innerHTML = '';
 
             if (data.success) {
-                data.bots.forEach(bot => {
-                    const card = document.createElement('div');
-                    card.className = 'bot-card';
-                    card.innerHTML = `
-                        <div class="bot-avatar" style="background-image: url('https://via.placeholder.com/80?text=${bot.nickname.charAt(0)}')"></div>
-                        <h4>${bot.nickname}</h4>
-                        <p>Status: BOOTING</p>
-                        <p>96 FRIENDS</p>
-                    `;
-                    grid.appendChild(card);
-                });
+                if (data.bots.length === 0) {
+                    grid.innerHTML = '<p>No OGsbot bots found.</p>';
+                } else {
+                    data.bots.forEach(bot => {
+                        const card = document.createElement('div');
+                        card.className = 'bot-card';
+                        card.innerHTML = `
+                            <div class="bot-avatar" style="background-image: url('https://via.placeholder.com/80?text=${bot.nickname.charAt(0)}')"></div>
+                            <h4>${bot.nickname}</h4>
+                            <p>Status: BOOTING</p>
+                            <p>96 FRIENDS</p>
+                        `;
+                        grid.appendChild(card);
+                    });
+                }
             } else {
                 grid.innerHTML = `<p>Error: ${data.error}</p>`;
             }
@@ -154,7 +156,7 @@
             }
         }
 
-        // Epic Games flows
+        // Epic Games flows in modal
         function createEpicAccount() {
             alert('Please do not add this to your main account as this may cause major issues with your main account. Please login to an alt account on Epic Games before proceeding with this step.');
         }
@@ -163,23 +165,37 @@
             window.location.href = 'https://www.epicgames.com/id/api/redirect?clientId=3f69e56c7649492c8cc29f1af08a8a12&responseType=code';
         }
 
-        // After redirect (simulated via URL check or manual trigger)
+        // Handle modal and form after redirect
+        function openAddBotModal(categoryId) {
+            document.getElementById('selectedCategoryId').value = categoryId;
+            document.getElementById('addBotModal').style.display = 'block';
+            document.getElementById('epicIdField').style.display = 'none';
+            document.getElementById('submitBtn').style.display = 'none';
+        }
+
+        function closeModal() {
+            document.getElementById('addBotModal').style.display = 'none';
+            document.getElementById('epicIdField').style.display = 'none';
+            document.getElementById('submitBtn').style.display = 'none';
+        }
+
+        // Check for redirect code and enable form
         window.onload = () => {
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.has('code')) {
-                document.getElementById('initialForm').classList.add('hidden');
-                document.getElementById('postRedirectForm').classList.remove('hidden');
+                document.getElementById('epicIdField').style.display = 'block';
+                document.getElementById('submitBtn').style.display = 'inline-block';
             }
             loadPublicBots();
             loadCategories();
         };
 
-        // Epic Form Submit (simulates AHK later)
-        document.getElementById('epicForm').addEventListener('submit', async (e) => {
+        // Add Bot Form Submit
+        document.getElementById('addBotForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const epicId = document.getElementById('epicId').value;
             const botName = document.getElementById('botName').value;
-            const categoryId = '67c2fd571906bd75e5239684'; // Hardcoded as per your request
+            const categoryId = document.getElementById('selectedCategoryId').value;
 
             const response = await fetch('/api/register-bot', {
                 method: 'POST',
@@ -195,6 +211,7 @@
                     <p>Epic ID: ${data.bot.epicId}</p>
                     <p>Simulating AHK: epicId=${epicId}, botName=${botName}, categoryId=${categoryId}</p>
                 `;
+                closeModal();
             } else {
                 display.innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
             }
