@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bot Creator</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }
+        .warning { color: red; font-weight: bold; padding: 10px; border: 1px solid red; }
+        .form-container { max-width: 400px; padding: 20px; background-color: white; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input { width: 100%; padding: 8px; margin-bottom: 15px; box-sizing: border-box; }
+        button { background-color: #1DA1F2; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background-color: #1a8cd8; }
+        .bot-display { background-color: #1DA1F2; color: white; padding: 10px; margin-top: 20px; border-radius: 5px; }
+        .bot-display img { width: 50px; height: 50px; vertical-align: middle; margin-right: 10px; }
+        #botDisplay p { margin: 0; }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h1>Bot Creator</h1>
+        <p class="warning">
+            Please do not add this to your main account as this may cause major issues with your main account. 
+            Please login to an alt account on Epic Games before proceeding with this step.
+        </p>
+        <form id="botForm">
+            <label for="authCode">Authorization Code (for future AHK script):</label><br>
+            <input type="text" id="authCode" name="authCode" required><br><br>
+            <label for="altAccount">Alt Account Name:</label><br>
+            <input type="text" id="altAccount" name="altAccount" required><br><br>
+            <label for="botName">Bot Nickname (from fnlb):</label><br>
+            <input type="text" id="botName" name="botName" required><br><br>
+            <button type="submit">Submit</button>
+        </form>
+        <div id="botDisplay"></div>
+    </div>
+
+    <script>
+        document.getElementById('botForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = {
+                authCode: document.getElementById('authCode').value,
+                altAccount: document.getElementById('altAccount').value,
+                botName: document.getElementById('botName').value
+            };
+
+            try {
+                const response = await fetch('/api/register-bot', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+                const display = document.getElementById('botDisplay');
+                display.innerHTML = '';
+
+                if (data.success) {
+                    display.innerHTML = `
+                        <h3>${data.bot.altAccount}'s bot (1 of 1 bots)</h3>
+                        <div class="bot-display">
+                            <img src="https://via.placeholder.com/50" alt="Bot Avatar">
+                            ${data.bot.nickname}<br>
+                            ${data.bot.email}<br>
+                            Category: ${data.bot.category}<br>
+                            1 FRIENDS
+                        </div>
+                    `;
+                } else {
+                    display.innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
+                }
+            } catch (error) {
+                document.getElementById('botDisplay').innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        });
+    </script>
+</body>
+</html>
